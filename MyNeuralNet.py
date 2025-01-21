@@ -12,8 +12,12 @@ class AkashNet():
         self.biases = []
         self.layers = 0
         self.neurons = []
+        self.error_rates = []
+        self.outputs = []
+        self.final_output = []
+        self.learning_rate = 1
     def get_train_data(self):
-        data = MNIST('C:\\Akash\\Coding\\Python\\Neural_Net\\data')
+        data = MNIST('.\\data')
         self.x_train,self.y_train = data.load_training()
         images = []
         for data in self.x_train:
@@ -47,20 +51,57 @@ class AkashNet():
             print(weight.shape)
         for bias in self.biases:
             print(bias.shape)
-    def forward_prop(self,data):
-        a = data
+    def forward_prop(self,index):
+        a = self.x_train[index]
         for layer in range(0,len(self.weights)):
             z = np.dot(a,self.weights[layer])
             z = np.add(self.biases[layer],z)
             print(z)
+            print('z')
             a = self.softmax(z)
-            print(a)
+            self.outputs.append(a)
+        self.final_output = a
+        print(self.final_output)
+        print('final_output')
     def softmax(self,x):
         x = np.divide(x,np.max(x))
         x = np.exp(x)
         total = np.sum(x)
         x = np.divide(x,total)
         return x
+    def find_error_mat(self,index):
+        i = self.y_train[index]
+        arr = np.full((1,10),0)
+        arr[0][i] = 1
+        return arr
+    def find_error_rate(self,index):
+        y_target = self.find_error_mat(index)
+        y_target = np.subtract(y_target,self.final_output)
+        y_target = np.abs(y_target)
+        print(y_target)
+        print('y_target')
+        derva = self.find_derva(self.final_output)
+        for i in range(0,len(self.neurons)-1):
+            self.error_rates.append([])
+        self.error_rates.append(np.multiply(y_target,derva))
+        print(self.error_rates)
+        print('error rates')
+    def find_derva(self,output):
+        return np.multiply(output,(np.subtract(1,output)))
+    def backpropogate(self):
+        for layer in range(len(self.weights)-1,0,-1):
+            output = self.outputs[layer-1]
+            weight = self.weights[layer]
+            error = self.error_rates[layer]
+            
+
+
+            
+
+
+            
+        
+
 
         
 
@@ -68,6 +109,7 @@ akash = AkashNet()
 akash.get_train_data()
 akash.neuron_calc()
 akash.random_weights_biases()
-akash.forward_prop(akash.x_train[0])
-        
+akash.forward_prop(0)
+akash.find_error_rate(0)
+akash.backpropogate()        
 
