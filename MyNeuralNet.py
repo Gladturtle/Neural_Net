@@ -15,6 +15,8 @@ class AkashNet():
         self.error_rates = []
         self.outputs = []
         self.final_output = []
+        self.weight_error = []
+        self.bias_error = []
         self.learning_rate = 1
     def get_train_data(self):
         data = MNIST('.\\data')
@@ -46,22 +48,25 @@ class AkashNet():
     def random_weights_biases(self):
         for i in range(0,len(self.neurons)-1):
             self.weights.append(np.random.rand(self.neurons[i],self.neurons[i+1]))
+            self.weight_error.append(np.full((self.neurons[i],self.neurons[i+1]),0))
             self.biases.append(np.full((self.neurons[i+1]),0.001))
+            self.bias_error.append(np.full((self.neurons[i+1],1),0))
         for weight in self.weights:
             print(weight.shape)
         for bias in self.biases:
             print(bias.shape)
     def forward_prop(self,index):
         a = self.x_train[index]
+        self.outputs.append(a)
         for layer in range(0,len(self.weights)):
             z = np.dot(a,self.weights[layer])
             z = np.add(self.biases[layer],z)
-            print(z)
+            print(z.shape)
             print('z')
             a = self.softmax(z)
             self.outputs.append(a)
         self.final_output = a
-        print(self.final_output)
+        print(self.final_output.shape)
         print('final_output')
     def softmax(self,x):
         x = np.divide(x,np.max(x))
@@ -77,7 +82,6 @@ class AkashNet():
     def find_error_rate(self,index):
         y_target = self.find_error_mat(index)
         y_target = np.subtract(y_target,self.final_output)
-        y_target = np.abs(y_target)
         print(y_target)
         print('y_target')
         derva = self.find_derva(self.final_output)
@@ -89,11 +93,58 @@ class AkashNet():
     def find_derva(self,output):
         return np.multiply(output,(np.subtract(1,output)))
     def backpropogate(self):
-        for layer in range(len(self.weights)-1,0,-1):
-            output = self.outputs[layer-1]
+        for layer in range(len(self.weights)-1,-1,-1):
+            output = self.outputs[layer]
             weight = self.weights[layer]
-            error = self.error_rates[layer]
+            error = self.error_rates[layer+1]
+            error = np.array(error)
+            output = output.reshape(1,-1)
+            print(error)
+            print(output.shape)
+            print(error.shape)
+            print(weight.shape)
+            print(np.multiply(np.dot(error,weight.transpose()),output))
+            self.error_rates[layer]=np.multiply(np.dot(error,weight.transpose()),output)
+
+    def weight_bias_update(self):
+        for layer in range(len(self.weights)-1,-1,-1):
+            error = self.error_rates[layer+1]
+            a = self.outputs[layer]
+            weights = np.dot(a.reshape(-1,1),error)
+            print('weight_update')
+            print(a)
+            print('outputs')
+            print(error.shape)
+            print(weights.shape)
+            self.weight_error[layer] = np.add(self.weight_error[layer],weights)
+            print(self.weight_error[layer])
+        i = 0
+        for bias in self.error_rates[1:len(self.error_rates)]:
+            self.bias_error[i]=np.add(self.bias_error[i],bias.transpose())
+            i+=1
+        self.error_rates = []
+        self.outputs = []
             
+    def predict(self,index):
+        a = self.x_train[index]
+        for layer in range(0,len(self.weights)):
+            z = np.dot(a,self.weights[layer])
+            z = np.add(self.biases[layer],z)
+            print(z.shape)
+            print('z')
+            a = self.softmax(z)
+        print('Predicted : '+str(a.argmax()))
+        print('Actual : '+str(self.y_train[index]))
+    def gradient_descent(self):
+        for i in range(0,len(self.weights)):
+            self.weights[i] = np.subtract(self.weights[i],self.weight_error[i])
+        for i in range(0,len(self.biases)):
+            self.biases[i] = np.subtract(self.biases[i],self.bias_error[i].flatten())
+
+
+
+            
+
 
 
             
@@ -109,7 +160,17 @@ akash = AkashNet()
 akash.get_train_data()
 akash.neuron_calc()
 akash.random_weights_biases()
-akash.forward_prop(0)
-akash.find_error_rate(0)
-akash.backpropogate()        
+j = 1
+for i in range(0,500):
+    l = 0
+    for l in range(0,500):
+        for k in range(int(j-1)*10,int(j*10)):
+            akash.forward_prop(k)
+            akash.find_error_rate(k)
+            akash.backpropogate()  
+            akash.weight_bias_update()
+    akash.gradient_descent()
+    j +=1  
+for i in range(50001,50011):
+    akash.predict(i)
 
