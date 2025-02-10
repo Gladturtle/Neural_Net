@@ -18,7 +18,7 @@ class AkashNet():
         self.final_output = []
         self.weight_error = []
         self.bias_error = []
-        self.learning_rate = 0.3
+        self.learning_rate = 0.01
     def get_train_data(self):
         data = MNIST('.\\data')
         self.x_train,self.y_train = data.load_training()
@@ -82,7 +82,6 @@ class AkashNet():
     def softmax(self,x):
         print(x)
         x = x-np.max(x)
-        x = x/np.linalg.norm(x)
         print('x')
         x = np.exp(x)
         total = np.sum(x)
@@ -95,28 +94,17 @@ class AkashNet():
         return arr
     def find_error_rate(self,index):
         y_target = self.find_error_mat(index)
-        y_target = np.subtract(y_target,self.final_output)
+        y_target = np.subtract(self.final_output,y_target)
         print(y_target)
         print('y_target')
-        derva = self.find_derva_softmax(self.final_output)
+
         for i in range(0,len(self.neurons)-1):
             self.error_rates.append([])
-        self.error_rates.append(np.dot(y_target,derva))
+        self.error_rates.append(y_target)
         print(self.error_rates)
         print('error rates')
 
-    def find_derva_softmax(self,output):
-        output = output.reshape(1,-1)
-        print('output.shape')
-        print(output)
-        jacob = np.dot(output.transpose(),np.multiply(output,-1))
-        
-        for i in range(0,jacob.shape[0]):
-            for j in range(0,jacob.shape[1]):
-                if i==j:
-                    jacob[i][j]=output[0][i]*(1-output[0][i])
-        print(jacob)
-        return jacob
+  
     def find_derva_relu(self,x):
         x = np.where(x>10**100,0,x)
         x = np.where(np.logical_and(x>0 ,x<10**100),1,x)
@@ -140,7 +128,7 @@ class AkashNet():
             print(output.shape)
             print(error.shape)
             print(weight.shape)
-            print(np.multiply(np.dot(error,weight.transpose()),output))
+            print(self.find_derva_relu(output))
             self.error_rates[layer]=np.multiply(np.dot(error,weight.transpose()),self.find_derva_relu(output))
     def weight_bias_update(self):
         for layer in range(len(self.weights)-1,-1,-1):
@@ -172,12 +160,16 @@ class AkashNet():
             a = self.softmax(z)
         print('Predicted : '+str(a.argmax()))
         print('Actual : '+str(self.y_train[index]))
-    def gradient_descent(self):
+    def gradient_descent(self,t):
         for i in range(0,len(self.weights)):
-            self.weights[i] = np.add(self.weights[i],self.learning_rate*self.weight_error[i])
+            self.weights[i] = np.subtract(self.weights[i],(self.learning_rate/t)*self.weight_error[i])
         for i in range(0,len(self.biases)):
-            self.biases[i] = np.add(self.biases[i],self.learning_rate*self.bias_error[i].flatten())
-
+            self.biases[i] = np.subtract(self.biases[i],(self.learning_rate/t)*self.bias_error[i].flatten())
+        self.weight_error = []
+        self.bias_error = []
+        for i in range(0,len(self.neurons)-1):
+            self.weight_error.append(np.full((self.neurons[i],self.neurons[i+1]),0))
+            self.bias_error.append(np.full((self.neurons[i+1],1),0))
 
 
             
@@ -198,15 +190,18 @@ akash.get_train_data()
 akash.neuron_calc()
 akash.random_weights_biases()
 j = 1
+t = 0
 for i in range(0,500):
     l = 0
     for l in range(0,10):
         for k in range(int(j-1)*10,int(j*10)):
+            t +=1
             akash.forward_prop(k)
             akash.find_error_rate(k)
             akash.backpropogate()  
             akash.weight_bias_update()
-    akash.gradient_descent()
+    akash.gradient_descent(t)
+    t = 0
     j +=1  
 for i in range(50001,50011):
     akash.predict(i)
