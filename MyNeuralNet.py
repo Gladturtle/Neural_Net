@@ -18,7 +18,7 @@ class AkashNet():
         self.final_output = []
         self.weight_error = []
         self.bias_error = []
-        self.learning_rate = 0.01
+        self.learning_rate = 0.3
     def get_train_data(self):
         data = MNIST('.\\data')
         self.x_train,self.y_train = data.load_training()
@@ -48,7 +48,7 @@ class AkashNet():
                 print('Hidden Layer '+str(i)+' : '+str(self.neurons[i]))
     def random_weights_biases(self):
         for i in range(0,len(self.neurons)-1):
-            self.weights.append(np.random.rand(self.neurons[i],self.neurons[i+1]))
+            self.weights.append(np.random.randn(self.neurons[i], self.neurons[i+1]) * np.sqrt(2 / self.neurons[i]))
             self.weight_error.append(np.full((self.neurons[i],self.neurons[i+1]),0))
             self.biases.append(np.full((self.neurons[i+1]),0.001))
             self.bias_error.append(np.full((self.neurons[i+1],1),0))
@@ -129,7 +129,10 @@ class AkashNet():
             print(error.shape)
             print(weight.shape)
             print(self.find_derva_relu(output))
-            self.error_rates[layer]=np.multiply(np.dot(error,weight.transpose()),self.find_derva_relu(output))
+            if layer == len(self.weights)-1:
+                self.error_rates[layer]=np.dot(error,weight.transpose())
+            else:
+                self.error_rates[layer]=np.multiply(np.dot(error,weight.transpose()),self.find_derva_relu(output))
     def weight_bias_update(self):
         for layer in range(len(self.weights)-1,-1,-1):
             error = self.error_rates[layer+1]
