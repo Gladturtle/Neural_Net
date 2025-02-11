@@ -18,7 +18,7 @@ class AkashNet():
         self.final_output = []
         self.weight_error = []
         self.bias_error = []
-        self.learning_rate = 0.3
+        self.learning_rate = 0.07
     def get_train_data(self):
         data = MNIST('.\\data')
         self.x_train,self.y_train = data.load_training()
@@ -94,7 +94,7 @@ class AkashNet():
         return arr
     def find_error_rate(self,index):
         y_target = self.find_error_mat(index)
-        y_target = np.subtract(self.final_output,y_target)
+        y_target =np.subtract(self.final_output,y_target)
         print(y_target)
         print('y_target')
 
@@ -158,11 +158,21 @@ class AkashNet():
         for layer in range(0,len(self.weights)):
             z = np.dot(a,self.weights[layer])
             z = np.add(self.biases[layer],z)
-            print(z.shape)
-            print('z')
-            a = self.softmax(z)
+            if layer == len(self.weights)-1:
+                a = self.softmax(z)
+                print(a)
+                print('a')
+            else:
+                
+                a = self.leaky_relu(z)
+                print(a)
+                print('a')
         print('Predicted : '+str(a.argmax()))
         print('Actual : '+str(self.y_train[index]))
+        if a.argmax() == self.y_train[index]:
+            return 1
+        else:
+            return 0
     def gradient_descent(self,t):
         for i in range(0,len(self.weights)):
             self.weights[i] = np.subtract(self.weights[i],(self.learning_rate/t)*self.weight_error[i])
@@ -194,10 +204,10 @@ akash.neuron_calc()
 akash.random_weights_biases()
 j = 1
 t = 0
-for i in range(0,500):
+for i in range(0,50):
     l = 0
     for l in range(0,10):
-        for k in range(int(j-1)*10,int(j*10)):
+        for k in range(int(j-1)*100,int(j*100)):
             t +=1
             akash.forward_prop(k)
             akash.find_error_rate(k)
@@ -206,6 +216,10 @@ for i in range(0,500):
     akash.gradient_descent(t)
     t = 0
     j +=1  
-for i in range(50001,50011):
-    akash.predict(i)
+for i in range(50000,55000):
+    if i == 50000:
+        correct = 0
+    correct = correct + akash.predict(i)
+    if i == 54999:
+        print('Accuracy : '+str((correct/5000)*100))
 
